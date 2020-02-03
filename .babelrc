@@ -1,0 +1,24 @@
+{
+  "presets": [
+    [
+      "next/babel",
+      {
+        "styled-jsx": {},
+        "class-properties": {
+          "loose": true
+        }
+      }
+    ]
+  ],
+  "plugins": [
+    [
+      "styled-jsx/babel"
+    ],
+    [
+      "@babel/plugin-proposal-decorators",
+      {
+        "legacy": true
+      }
+    ]
+  ]
+}

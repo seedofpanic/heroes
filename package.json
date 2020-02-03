@@ -1,0 +1,25 @@
+{
+  "name": "data-dashboard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start -p 3030",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/plugin-proposal-decorators": "^7.8.3",
+    "@zeit/next-css": "^1.0.1",
+    "mobx": "^5.15.4",
+    "mobx-react": "^6.1.4",
+    "next": "^9.2.1",
+    "pathfinding": "^0.4.18",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "styled-jsx": "3.2.1"
+  }
+}
