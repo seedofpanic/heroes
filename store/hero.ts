@@ -3,6 +3,7 @@ import PF from "pathfinding";
 import {gameStore, mapCoords} from "./game.store";
 import {Tile} from "./tile";
 import {random} from "./random";
+import {EQUIP_SLOTS} from "./items";
 
 let nextHeroNumber = 1;
 
@@ -19,6 +20,9 @@ export class Hero {
     navigator;
     @observable inventory = {};
     @observable money = 0;
+    @observable equip = {
+        [EQUIP_SLOTS.CHEST]: null
+    };
 
     constructor(x, y) {
         this.x = x;
@@ -35,7 +39,9 @@ export class Hero {
         const tile = gameStore.map[mapCoords(this.x, this.y)];
 
         if (this.x === 0 && this.y === 0) {
-            this.sellItems();
+            const building = gameStore.getBuildingFromCoords(this.x, this.y);
+            this.sellItems(building);
+            this.buyItems(building);
 
             if (this.currentHealth < this.maxHealth) {
                 this.heal(10);
@@ -53,20 +59,49 @@ export class Hero {
         }
     }
 
-    sellItems() {
-        const {building} = gameStore.map[mapCoords(this.x, this.y)];
+    sellItems(building) {
+        Object.keys(this.inventory).forEach(itemType => {
+            const price = building.toBuy[itemType];
 
-        if (this.inventory['leather'] > 0) {
-            building.addItems({
-                leather: this.inventory['leather']
-            });
-            this.money = this.inventory['leather'];
-            this.inventory['leather'] = 0;
+            if (price) {
+                let toSell = this.inventory[itemType];
 
-            if (this.inventory['leather'] === 0) {
-                delete this.inventory['leather'];
+                if (toSell * price > gameStore.money) {
+                    toSell = Math.floor(gameStore.money / price);
+                }
+
+                building.addItems({
+                    [itemType]: toSell
+                });
+                gameStore.money -= toSell * price;
+                this.money += toSell * price;
+                this.removeItem(itemType, toSell);
             }
+        });
+    }
+
+    removeItem(type, count) {
+        this.inventory[type] -= count;
+
+        if (this.inventory[type] < 1) {
+            delete this.inventory[type];
         }
+    }
+
+    buyItems(building) {
+        Object.keys(building.inventory).forEach(itemType => {
+            const count = building.inventory[itemType];
+            const price = building.forSell[itemType];
+
+            if (price) {
+                if (!this.inventory[itemType] && price <= this.money) {
+                    this.addItem(itemType, 1);
+                    building.removeItem(itemType, 1);
+                    this.money -= price;
+                    gameStore.money += price;
+                }
+            }
+        });
     }
 
     aiNavigation() {
@@ -120,7 +155,7 @@ export class Hero {
         return random(this.damageMin, this.damageMax);
     }
 
-    engage(tile) {
+    engage(tile: Tile) {
         const mob = gameStore.mobs[tile.mobs[0]];
 
         if (!mob) {
@@ -138,12 +173,16 @@ export class Hero {
     }
 
     addItems(loot) {
-        loot.forEach(item => {
-            this.inventory[item.id] = this.inventory[item.id] ? this.inventory[item.id] + 1 : 1;
+        loot.forEach(type => {
+            this.addItem(type, 1);
         });
     }
 
-    hit(damage) {
+    addItem(type, count) {
+        this.inventory[type] = this.inventory[type] ? this.inventory[type] + count : count;
+    }
+
+    hit(damage: number) {
         this.currentHealth -= damage;
 
         if (this.currentHealth <= this.maxHealth / 10) {

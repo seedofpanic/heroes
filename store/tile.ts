@@ -3,7 +3,7 @@ import {gameStore} from "./game.store";
 import {random} from "./random";
 
 // sprite size 48
-export const spritesMap = {
+export const spritesMap: {[name: string]: [number, number]} = {
     grass: [0, 0],
     grass2: [-48, 0],
     grass3: [0, -48],
@@ -24,10 +24,10 @@ const grassFull = [
 ];
 
 export class Tile {
-    @observable heroes = [];
-    @observable mobs = [];
-    sprite;
-    @observable building;
+    @observable heroes: number[] = [];
+    @observable mobs: number[] = [];
+    sprite: [number, number];
+    @observable buildingId: number;
 
     constructor() {
     }

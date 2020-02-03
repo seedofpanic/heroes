@@ -1,8 +1,7 @@
 import React from "react";
 import {gameStore} from "../store/game.store";
-import _JSXStyle from "styled-jsx/style"
 import {observer} from "mobx-react";
-import {TileComponent} from "./tile.component";
+import {TileComponent} from "./tile/tile.component";
 
 @observer
 export class MapComponent extends React.Component {

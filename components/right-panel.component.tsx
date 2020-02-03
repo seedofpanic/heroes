@@ -1,9 +1,9 @@
 import React from "react";
 import {observer} from "mobx-react";
-import _JSXStyle from "styled-jsx/style"
 import {gameStore} from "../store/game.store";
 import {HeroDetailsComponent} from "./hero-details.component";
 import {BuildingInfoComponent} from "./building-info.component";
+import {BuildMenuComponent} from "./build-menu.component";
 
 @observer
 export class RightPanelComponent extends React.Component {
@@ -14,7 +14,7 @@ export class RightPanelComponent extends React.Component {
             return <div className="right-panel"></div>;
         }
 
-        const {building} = tile;
+        const building = tile.buildingId ? gameStore.buildings[tile.buildingId] : null;
 
         return <div className="right-panel">
             {gameStore.heroToShow ?
@@ -24,7 +24,9 @@ export class RightPanelComponent extends React.Component {
                 : ''
             }
             <div className="part">
-                <BuildingInfoComponent building={building}/>
+                {
+                    building ? <BuildingInfoComponent building={building}/> : <BuildMenuComponent tile={tile}></BuildMenuComponent>
+                }
                 {tile.heroes.length ?
                 <div>
                     <div>Heroes</div>

@@ -4,14 +4,16 @@ import {spritesMap, Tile} from "./tile";
 import {Building} from "./building";
 import {Mob} from "./mob";
 
-export const gameStore = new class GameStore {
+class GameStore {
     @observable offsetX = -5;
     @observable offsetY = -5;
-    @observable heroes = {};
-    @observable mobs = {};
-    @observable map = {};
-    @observable viewTile = null;
-    @observable heroToShow = null;
+    @observable heroes: {[name: number]: Hero} = {};
+    @observable mobs: {[name: number]: Mob} = {};
+    @observable buildings: {[name: number]: Building} = {};
+    @observable map: {[name: string]: Tile} = {};
+    @observable viewTile: Tile = null;
+    @observable heroToShow: Hero = null;
+    @observable money = 20;
     maxX = 0;
     minX = 0;
     maxY = 0;
@@ -59,7 +61,11 @@ export const gameStore = new class GameStore {
         return mob;
     }
 
-    tick() {
+    tick(count) {
+        if (count % 20 === 0) {
+            this.money += 1;
+        }
+
         Object.keys(gameStore.heroes).forEach(id => {
             const hero = gameStore.heroes[id];
 
@@ -87,7 +93,20 @@ export const gameStore = new class GameStore {
 
         return pathArray;
     }
-};
+
+    getBuildingFromCoords(x, y) {
+        return this.buildings[this.map[mapCoords(x, y)].buildingId];
+    }
+
+    build(tile) {
+        const building = new Building();
+
+        tile.buildingId = building.id;
+        this.buildings[building.id] = building;
+    }
+}
+
+export const gameStore = new GameStore();
 
 export function mapCoords(x, y) {
     return `${x}x${y}`;
@@ -95,15 +114,20 @@ export function mapCoords(x, y) {
 
 const tile = new Tile();
 tile.sprite = spritesMap.grass;
-tile.building = new Building();
+gameStore.build(tile);
 gameStore.addTile(tile, 0, 0);
 const hero = new Hero(0, 0);
 hero.generate();
 gameStore.addHero(hero, 0, 0);
 
+let countTicks = 0;
 function doTicks() {
     setTimeout(() => {
-        gameStore.tick();
+        gameStore.tick(countTicks++);
+
+        if (countTicks > 1000) {
+            countTicks = 0;
+        }
 
         doTicks();
     }, 1000);

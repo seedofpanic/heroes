@@ -1,6 +1,10 @@
 import React from "react";
+import {items, ITEMS_IDS} from "../store/items";
+import {Building} from "../store/building";
 
 export class BuildingInfoComponent extends React.Component {
+    props: {building: Building};
+
     render() {
         const {building} = this.props;
 
@@ -15,11 +19,11 @@ export class BuildingInfoComponent extends React.Component {
                 {Object.keys(building.inventory).map(key => {
                     const item = building.inventory[key];
 
-                    return <li key={key}>{key}: {item}</li>
+                    return <li key={key}>{items[key].name}: {item}</li>
                 })}
             </ul>
             <div>
-                {building.inventory['leather'] > 3 ? <button onClick={() => this.makeItem()}>Make leather armor</button> : ''}
+                {building.inventory[ITEMS_IDS.LEATHER] >= 3 ? <button onClick={() => this.makeItem()}>Make leather armor</button> : ''}
             </div>
         </div>;
     }

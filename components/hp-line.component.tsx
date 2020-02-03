@@ -1,6 +1,8 @@
 import React from "react";
 
 export class HpLineComponent extends React.Component {
+    props: {current: number, max: number};
+
     render() {
         const current = Math.floor(100 / this.props.max * this.props.current);
 

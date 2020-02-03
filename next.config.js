@@ -10,7 +10,8 @@ module.exports = {
                     options: {
                         type: 'scoped'
                     }
-                }
+                },
+                'css-modules-typescript-loader'
             ]
         })
 

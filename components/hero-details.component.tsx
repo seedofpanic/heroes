@@ -1,6 +1,12 @@
 import React from "react";
+import {items} from "../store/items";
+import {observer} from "mobx-react";
+import {Hero} from "../store/hero";
 
+@observer
 export class HeroDetailsComponent extends React.Component {
+    props: {hero: Hero};
+
     render() {
         const {hero} = this.props;
 
@@ -14,7 +20,7 @@ export class HeroDetailsComponent extends React.Component {
                     {Object.keys(hero.inventory).map(key => {
                         const item = hero.inventory[key];
 
-                        return <li key={key}>{key}: {item}</li>
+                        return <li key={key}>{items[key].name}: {item}</li>
                     })}
                 </ul>
             </div>

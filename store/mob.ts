@@ -1,18 +1,29 @@
 import {observable, toJS} from "mobx";
 import {gameStore, mapCoords} from "./game.store";
 import {random} from "./random";
+import {ITEMS_IDS} from "./items";
 
 let nextMobNumber = 1;
+
+export interface LootItem {
+    type: ITEMS_IDS;
+    chance: number;
+}
 
 export class Mob {
     @observable id = nextMobNumber;
     @observable name = `Mob ${nextMobNumber}`;
-    @observable maxHealth;
-    @observable currentHealth;
+    @observable maxHealth: number;
+    @observable currentHealth: number;
+    isDead: boolean;
     damageMin = 1;
     damageMax = 3;
-    x;
-    y;
+    x: number;
+    y: number;
+    possibleLoot: LootItem[] = [
+        {type: ITEMS_IDS.LEATHER, chance: 0.5},
+        {type: ITEMS_IDS.LEATHER, chance: 0.5},
+    ];
 
     constructor() {
         nextMobNumber++;
@@ -23,7 +34,7 @@ export class Mob {
         this.currentHealth = this.maxHealth;
     }
 
-    hit(damage) {
+    hit(damage): LootItem[] | null {
         this.currentHealth -= damage;
 
         if (this.currentHealth <= 0) {
@@ -33,11 +44,8 @@ export class Mob {
         }
     }
 
-    generateLoot() {
-        return [
-            {id: 'leather', chance: 0.5},
-            {id: 'leather', chance: 0.5},
-        ].filter(item => item.chance > Math.random());
+    generateLoot(): LootItem[] {
+        return this.possibleLoot.filter(item => item.chance > Math.random());
     }
 
     getDamage() {
