@@ -3,23 +3,35 @@
     flex: 0 0 48px;
     height: 48px;
     box-sizing: border-box;
-    border: solid 1px #fafafa;
     display: flex;
     flex-direction: row;
     align-items: end;
 }
+
+.tile:before {
+    content: '';
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    box-sizing: border-box;
+}
+
+.tile.hidden:before {
+    border: solid 1px #fafafa;
+}
+
 .tile.exists {
     border: none;
     background: url(https://res.cloudinary.com/dstnxq7wt/image/upload/v1580680438/heroes/A2_Ground.png) 0 0;
     background-size: 768px 576px;
 }
+
+.tile.scout:before {
+    border: solid 1px green;
+}
+
 .tile.selected:before {
-    content: '';
-    position: absolute;
-    width: 48px;
-    height: 48px;
     border: solid 1px red;
-    box-sizing: border-box;
 }
 
 .building {

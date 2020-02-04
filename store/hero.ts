@@ -18,12 +18,13 @@ export class Hero {
     damageMin = 1;
     damageMax = 3;
     @observable isDead;
-    navigator;
+    navigator = [];
     @observable inventory = {};
     @observable money = 0;
     @observable equip: {[name: string]: ITEMS_TYPES} = {
         [EQUIP_SLOTS.CHEST]: null
     };
+    scoutMark: string;
 
     constructor(x, y) {
         this.x = x;
@@ -51,13 +52,21 @@ export class Hero {
             }
         }
 
-        if (this.navigator) {
-            this.aiNavigation();
-        } else if (tile.mobs.length > 0) {
-            this.engage(tile);
-        } else {
-            this.aiMove();
+        if (!this.scoutMark) {
+            this.checkQuests();
         }
+
+        if (tile.mobs.length > 0) {
+            this.engage(tile);
+            return;
+        }
+
+        if (this.navigator.length) {
+            this.aiNavigation();
+            return;
+        }
+
+        this.aiMove();
     }
 
     sellItems(building) {
@@ -107,12 +116,22 @@ export class Hero {
     }
 
     aiNavigation() {
-        const step = this.navigator.path.shift();
+        const navigator = this.navigator[0];
 
-        this.move(step[0] + this.navigator.offsets[0], step[1] + this.navigator.offsets[1]);
+        if (navigator.path.length) {
+            const step = navigator.path.shift();
 
-        if (!this.navigator.path.length) {
-            this.navigator = null;
+            this.move(step[0] + navigator.offsets[0], step[1] + navigator.offsets[1]);
+        }
+
+        if (!navigator.path.length) {
+            this.navigator.shift();
+        }
+
+        if (!this.navigator.length && this.scoutMark) {
+            this.money += gameStore.scoutMarks[this.scoutMark].reward;
+            delete gameStore.scoutMarks[this.scoutMark];
+            this.scoutMark = null;
         }
     }
 
@@ -197,18 +216,22 @@ export class Hero {
         this.currentHealth -= finalDamage < 1 ? 1 : Math.floor(finalDamage);
 
         if (this.currentHealth <= this.maxHealth / 10) {
-            const grid = new PF.Grid(gameStore.genPathArray());
-            const finder = new PF.AStarFinder();
-
-            this.navigator = {
-                offsets: [gameStore.minX, gameStore.minY],
-                path: finder.findPath(this.x - gameStore.minX, this.y - gameStore.minY, 0 - gameStore.minX, 0 - gameStore.minY, grid)
-            };
+            this.navigator.unshift(this.getNavigationTo(0, 0));
         }
 
         if (this.currentHealth <= 0) {
             this.die();
         }
+    }
+
+    getNavigationTo(x: number, y: number) {
+        const grid = new PF.Grid(gameStore.genPathArray());
+        const finder = new PF.AStarFinder();
+
+        return {
+            offsets: [gameStore.minX, gameStore.minY],
+            path: finder.findPath(this.x - gameStore.minX, this.y - gameStore.minY, x - gameStore.minX, y - gameStore.minY, grid)
+        };
     }
 
     die() {
@@ -228,5 +251,109 @@ export class Hero {
         const chest = this.equip[EQUIP_SLOTS.CHEST];
 
         return 1 + (chest ? items[chest].stats.armor : 0);
+    }
+
+    private checkQuests() {
+        if (Object.keys(gameStore.heroes).length > 1) {
+            console.error('multiple heroes not supported!!!')
+        }
+        const scoutMarks = Object.keys(gameStore.scoutMarks);
+
+        if (scoutMarks.length > 0) {
+            this.scoutMark = scoutMarks[0];
+            gameStore.scoutMarks[this.scoutMark].heroId = this.id;
+            this.buildScoutNavigator();
+        }
+    }
+
+    private buildScoutNavigator() {
+        const [markX, markY] = this.scoutMark.split('x').map(coord => parseInt(coord, 10));
+        let range = 1;
+        const result = [];
+
+        while (result.length === 0) {
+            for (let x = markX - range; x <= markX + range; x++) {
+                const upLine = mapCoords(x, markY - range);
+                if (gameStore.map[upLine]) {
+                    result.push([x, markY - range]);
+                }
+
+                const bottomLine = mapCoords(x, markY + range);
+                if (gameStore.map[bottomLine]) {
+                    result.push([x, markY + range]);
+                }
+            }
+
+            for (let y = markY - range; y <= markY + range; y++) {
+                const leftLine = mapCoords(markX - range, y);
+                if (gameStore.map[leftLine]) {
+                    result.push([markX - range, y]);
+                }
+
+                const rightLine = mapCoords(markX + range, y);
+                if (gameStore.map[rightLine]) {
+                    result.push([markX + range, y]);
+                }
+            }
+
+            range++;
+
+            if (range === 11) {
+                console.error('can\'t find rout to the scout mark ' + this.scoutMark);
+            }
+        }
+
+        const existingTile = result.reduce((result, [x, y, minRange]) => {
+            const range = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
+
+            if (!result || range < minRange) {
+                return [x, y, range];
+            } else {
+                return result;
+            }
+        }, null);
+
+        if (!existingTile) {
+            return;
+        }
+
+        // The way from the hero to closest known tile
+        this.navigator.push(this.getNavigationTo(existingTile[0], existingTile[1]));
+
+        // The way from closest known tile to the target
+        let minX = existingTile[0] < markX ? existingTile[0] : markX;
+        let minY = existingTile[1] < markY ? existingTile[1] : markY;
+        let maxX: number;
+        let maxY: number;
+
+        if (existingTile[0] < markX) {
+            minX = existingTile[0];
+            maxX = markX
+        } else {
+            minX = markX;
+            maxX = existingTile[0]
+        }
+
+        if (existingTile[1] < markY) {
+            minY = existingTile[1];
+            maxY = markY
+        } else {
+            minY = markY;
+            maxY = existingTile[1]
+        }
+
+        const grid = new PF.Grid((new Array(maxY - minY + 1))
+            .fill((new Array(maxX - minX + 1)).fill(0)));
+        const finder = new PF.AStarFinder();
+
+        this.navigator.push({
+            offsets: [minX, minY],
+            path: finder.findPath(
+                existingTile[0] - minX,
+                existingTile[1] - minY,
+                markX - minX,
+                markY - minY,
+                grid)
+        });
     }
 }

@@ -7,19 +7,20 @@ import {Tile} from "../../store/tile";
 
 @observer
 export class TileComponent extends React.Component {
-    props: {tile: Tile};
+    props: {coords: string};
 
     render() {
-        const {tile} = this.props;
+        const {coords} = this.props;
+        const tile = gameStore.map[coords];
 
         if (!tile) {
-            return <div className="tile"><style jsx>{style}</style></div>;
+            return <div className={'tile hidden' + (gameStore.viewTile === coords ? ' selected' : '') + (gameStore.scoutMarks[coords] ? ' scout' : '')} onClick={() => this.viewTile()}><style jsx>{style}</style></div>;
         }
 
         const mob = tile.mobs.length ? gameStore.mobs[tile.mobs[0]] : null;
         const hero = tile.heroes.length ? gameStore.heroes[tile.heroes[0]] : null;
 
-        return <div style={{backgroundPosition: `${tile.sprite[0]}px ${tile.sprite[1]}px`}} className={'tile exists' + (gameStore.viewTile === tile ? ' selected' : '')} onClick={() => this.viewTile()}>
+        return <div style={{backgroundPosition: `${tile.sprite[0]}px ${tile.sprite[1]}px`}} className={'tile exists' + (gameStore.viewTile === coords ? ' selected' : '')} onClick={() => this.viewTile()}>
                 {tile.buildingId ? <div className="building"></div> : ''}
                 {tile.heroes.length ? <div className="hero">
                     <img src="https://res.cloudinary.com/dstnxq7wt/image/upload/v1580681051/heroes/mobs/knight.png"/>
@@ -34,10 +35,6 @@ export class TileComponent extends React.Component {
     }
 
     viewTile() {
-        if (!this.props.tile) {
-            return;
-        }
-
-        gameStore.showTile(this.props.tile);
+        gameStore.showTile(this.props.coords);
     }
 }

@@ -4,14 +4,21 @@ import {gameStore} from "../store/game.store";
 import {HeroDetailsComponent} from "./hero-details.component";
 import {BuildingInfoComponent} from "./building-info.component";
 import {BuildMenuComponent} from "./build-menu.component";
+import {HiddenTileDetailComponent} from "./hidden-tile-detail.component";
 
 @observer
 export class RightPanelComponent extends React.Component {
     render() {
-        const tile = gameStore.viewTile;
+        if (!gameStore.viewTile) {
+            return <div className="right-panel"></div>;
+        }
+
+        const tile = gameStore.map[gameStore.viewTile];
 
         if (!tile) {
-            return <div className="right-panel"></div>;
+            return <div className="right-panel">
+                <HiddenTileDetailComponent coords={gameStore.viewTile}/>
+            </div>;
         }
 
         const building = tile.buildingId ? gameStore.buildings[tile.buildingId] : null;

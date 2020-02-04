@@ -1,17 +1,17 @@
 import React from "react";
-import {gameStore} from "../store/game.store";
+import {gameStore, mapCoords} from "../store/game.store";
 import {observer} from "mobx-react";
 import {TileComponent} from "./tile/tile.component";
 
 @observer
 export class MapComponent extends React.Component {
-    mapFrameX = new Array(15).fill(true);
-    mapFrameY = new Array(15).fill(true);
+    mapFrameX = new Array(gameStore.mapWidth).fill(true);
+    mapFrameY = new Array(gameStore.mapHeight).fill(true);
 
     render() {
         return <div className="map" tabIndex={1} onKeyDown={(e) => this.keysHandler(e)}>
             {this.mapFrameX.map((noop, y) => <div className='line' key={y}>{this.mapFrameY.map((noop, x) =>
-                <TileComponent tile={gameStore.getTile(x + gameStore.offsetX, y + gameStore.offsetY)} key={x}/>
+                <TileComponent coords={mapCoords(x + gameStore.offsetX, y + gameStore.offsetY)} key={x}/>
             )}</div>)}
             <style jsx>{`
                 .map {
@@ -32,16 +32,24 @@ export class MapComponent extends React.Component {
     keysHandler(e) {
         switch (e.keyCode) {
             case 37:
-                gameStore.offsetX -= 1;
+                if (gameStore.minX - 10 < gameStore.offsetX) {
+                    gameStore.offsetX -= 1;
+                }
                 break;
             case 38:
-                gameStore.offsetY -= 1;
+                if (gameStore.minY - 10 < gameStore.offsetY) {
+                    gameStore.offsetY -= 1;
+                }
                 break;
             case 39:
-                gameStore.offsetX += 1;
+                if (gameStore.maxX + 10 - gameStore.mapWidth >= gameStore.offsetX) {
+                    gameStore.offsetX += 1;
+                }
                 break;
             case 40:
-                gameStore.offsetY += 1;
+                if (gameStore.maxY + 10 - gameStore.mapHeight >= gameStore.offsetY) {
+                    gameStore.offsetY += 1;
+                }
                 break;
         }
 

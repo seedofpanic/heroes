@@ -5,22 +5,26 @@ import {Building} from "./building";
 import {Mob} from "./mob";
 
 class GameStore {
+    @observable mapWidth = 15;
+    @observable mapHeight = 15;
     @observable offsetX = -5;
     @observable offsetY = -5;
     @observable heroes: {[name: number]: Hero} = {};
     @observable mobs: {[name: number]: Mob} = {};
     @observable buildings: {[name: number]: Building} = {};
     @observable map: {[name: string]: Tile} = {};
-    @observable viewTile: Tile = null;
+    @observable viewTile: string = null;
+    @observable viewHiddenTile: string = null;
     @observable heroToShow: Hero = null;
     @observable money = 20;
+    @observable scoutMarks: {[name: string]: {reward: number, heroId: number}} = {};
     maxX = 0;
     minX = 0;
     maxY = 0;
     minY = 0;
 
-    showTile(tile) {
-        this.viewTile = tile;
+    showTile(coords: string) {
+        this.viewTile = coords;
     }
 
     addTile(tile, x, y) {
@@ -40,7 +44,18 @@ class GameStore {
             this.minY = y;
         }
 
-        this.map[mapCoords(x, y)] = tile;
+        const coords = mapCoords(x, y);
+
+        this.map[coords] = tile;
+
+        if (this.scoutMarks[coords]) {
+            if (this.scoutMarks[coords].heroId) {
+                // TODO: remove navigation
+                // this.heroes[this.scoutMarks[coords].heroId];
+            }
+
+            delete this.scoutMarks[coords];
+        }
     }
 
     addHero(hero, x, y) {
@@ -103,6 +118,11 @@ class GameStore {
 
         tile.buildingId = building.id;
         this.buildings[building.id] = building;
+    }
+
+    addScoutMark(coords: string) {
+        this.scoutMarks[coords] = {reward: 5, heroId: null};
+        this.money -= 5;
     }
 }
 
