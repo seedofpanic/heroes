@@ -1,7 +1,9 @@
 import React from "react";
-import {items, ITEMS_IDS} from "../store/items";
+import {items, ITEMS_TYPES} from "../store/items";
 import {Building} from "../store/building";
+import {observer} from "mobx-react";
 
+@observer
 export class BuildingInfoComponent extends React.Component {
     props: {building: Building};
 
@@ -23,7 +25,7 @@ export class BuildingInfoComponent extends React.Component {
                 })}
             </ul>
             <div>
-                {building.inventory[ITEMS_IDS.LEATHER] >= 3 ? <button onClick={() => this.makeItem()}>Make leather armor</button> : ''}
+                {building.inventory[ITEMS_TYPES.LEATHER] >= 3 ? <button onClick={() => this.makeItem()}>Make leather armor</button> : ''}
             </div>
         </div>;
     }

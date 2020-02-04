@@ -1,7 +1,9 @@
 import React from "react";
 import {gameStore} from "../store/game.store";
 import {Tile} from "../store/tile";
+import {observer} from "mobx-react";
 
+@observer
 export class BuildMenuComponent extends React.Component {
     props: {tile: Tile};
 

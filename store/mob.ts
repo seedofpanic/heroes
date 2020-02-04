@@ -1,12 +1,12 @@
 import {observable, toJS} from "mobx";
 import {gameStore, mapCoords} from "./game.store";
 import {random} from "./random";
-import {ITEMS_IDS} from "./items";
+import {ITEMS_TYPES} from "./items";
 
 let nextMobNumber = 1;
 
 export interface LootItem {
-    type: ITEMS_IDS;
+    type: ITEMS_TYPES;
     chance: number;
 }
 
@@ -21,8 +21,8 @@ export class Mob {
     x: number;
     y: number;
     possibleLoot: LootItem[] = [
-        {type: ITEMS_IDS.LEATHER, chance: 0.5},
-        {type: ITEMS_IDS.LEATHER, chance: 0.5},
+        {type: ITEMS_TYPES.LEATHER, chance: 0.5},
+        {type: ITEMS_TYPES.LEATHER, chance: 0.5},
     ];
 
     constructor() {

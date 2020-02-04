@@ -1,5 +1,5 @@
 import {observable} from "mobx";
-import {ITEMS_IDS} from "./items";
+import {ITEMS_TYPES} from "./items";
 
 let nextBuildingId = 1;
 
@@ -11,7 +11,7 @@ export class Building {
         LEATHER_ARMOR: 10
     };
     @observable toBuy = {
-        [ITEMS_IDS.LEATHER]: 2
+        [ITEMS_TYPES.LEATHER]: 2
     };
 
     constructor() {
@@ -25,8 +25,8 @@ export class Building {
     }
 
     makeItem() {
-        this.inventory[ITEMS_IDS.LEATHER] -= 3;
-        this.inventory[ITEMS_IDS.LEATHER_ARMOR] = this.inventory[ITEMS_IDS.LEATHER_ARMOR] ? this.inventory[ITEMS_IDS.LEATHER_ARMOR] + 1 : 1;
+        this.inventory[ITEMS_TYPES.LEATHER] -= 3;
+        this.inventory[ITEMS_TYPES.LEATHER_ARMOR] = this.inventory[ITEMS_TYPES.LEATHER_ARMOR] ? this.inventory[ITEMS_TYPES.LEATHER_ARMOR] + 1 : 1;
     }
 
     addItem(type, count) {

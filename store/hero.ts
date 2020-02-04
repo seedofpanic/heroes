@@ -1,9 +1,10 @@
-import {observable} from "mobx";
+import {computed, observable} from "mobx";
 import PF from "pathfinding";
 import {gameStore, mapCoords} from "./game.store";
 import {Tile} from "./tile";
 import {random} from "./random";
-import {EQUIP_SLOTS} from "./items";
+import {EQUIP_SLOTS, Item, items, ITEMS_TYPES} from "./items";
+import {LootItem} from "./mob";
 
 let nextHeroNumber = 1;
 
@@ -20,7 +21,7 @@ export class Hero {
     navigator;
     @observable inventory = {};
     @observable money = 0;
-    @observable equip = {
+    @observable equip: {[name: string]: ITEMS_TYPES} = {
         [EQUIP_SLOTS.CHEST]: null
     };
 
@@ -89,13 +90,14 @@ export class Hero {
     }
 
     buyItems(building) {
-        Object.keys(building.inventory).forEach(itemType => {
+        Object.keys(building.inventory).forEach((itemType: ITEMS_TYPES) => {
             const count = building.inventory[itemType];
             const price = building.forSell[itemType];
 
             if (price) {
                 if (!this.inventory[itemType] && price <= this.money) {
                     this.addItem(itemType, 1);
+                    this.equipItem(itemType);
                     building.removeItem(itemType, 1);
                     this.money -= price;
                     gameStore.money += price;
@@ -172,9 +174,9 @@ export class Hero {
         }
     }
 
-    addItems(loot) {
-        loot.forEach(type => {
-            this.addItem(type, 1);
+    addItems(loot: LootItem[]) {
+        loot.forEach(lootItem => {
+            this.addItem(lootItem.type, 1);
         });
     }
 
@@ -182,12 +184,21 @@ export class Hero {
         this.inventory[type] = this.inventory[type] ? this.inventory[type] + count : count;
     }
 
+    equipItem(item: ITEMS_TYPES) {
+        if (!items[item].equippable) {
+            return;
+        }
+
+        this.equip[items[item].equippable] = item;
+    }
+
     hit(damage: number) {
-        this.currentHealth -= damage;
+        const finalDamage = damage / this.armor;
+        this.currentHealth -= finalDamage < 1 ? 1 : Math.floor(finalDamage);
 
         if (this.currentHealth <= this.maxHealth / 10) {
             const grid = new PF.Grid(gameStore.genPathArray());
-            var finder = new PF.AStarFinder();
+            const finder = new PF.AStarFinder();
 
             this.navigator = {
                 offsets: [gameStore.minX, gameStore.minY],
@@ -211,5 +222,11 @@ export class Hero {
         if (this.currentHealth > this.maxHealth) {
             this.currentHealth = this.maxHealth;
         }
+    }
+
+    @computed get armor() {
+        const chest = this.equip[EQUIP_SLOTS.CHEST];
+
+        return 1 + (chest ? items[chest].stats.armor : 0);
     }
 }
