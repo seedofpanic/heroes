@@ -13,8 +13,8 @@ export class Hero {
     @observable name = 'Sr. ' + nextHeroNumber;
     @observable maxHealth;
     @observable currentHealth;
-    x;
-    y;
+    x: number;
+    y: number;
     damageMin = 1;
     damageMax = 3;
     @observable isDead;
@@ -52,13 +52,13 @@ export class Hero {
             }
         }
 
-        if (!this.scoutMark) {
-            this.checkQuests();
-        }
-
         if (tile.mobs.length > 0) {
             this.engage(tile);
             return;
+        }
+
+        if (!this.navigator.length && !this.scoutMark) {
+            this.checkQuests();
         }
 
         if (this.navigator.length) {
@@ -216,7 +216,12 @@ export class Hero {
         this.currentHealth -= finalDamage < 1 ? 1 : Math.floor(finalDamage);
 
         if (this.currentHealth <= this.maxHealth / 10) {
-            this.navigator.unshift(this.getNavigationTo(0, 0));
+            this.navigator = [this.getNavigationTo(0, 0)];
+
+            if (this.scoutMark) {
+                gameStore.scoutMarks[this.scoutMark].heroId = null;
+                this.scoutMark = null;
+            }
         }
 
         if (this.currentHealth <= 0) {
