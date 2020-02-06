@@ -48,10 +48,16 @@ class GameStore {
 
         this.map[coords] = tile;
 
+        this.evaluateScoutMark(coords);
+    }
+
+    evaluateScoutMark(coords: string) {
         if (this.scoutMarks[coords]) {
             if (this.scoutMarks[coords].heroId) {
-                // TODO: remove navigation
-                // this.heroes[this.scoutMarks[coords].heroId];
+                const hero = this.heroes[this.scoutMarks[coords].heroId];
+
+                hero.removeScoutMark();
+                hero.addMoney(this.scoutMarks[coords].reward);
             }
 
             delete this.scoutMarks[coords];

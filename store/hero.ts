@@ -127,12 +127,15 @@ export class Hero {
         if (!navigator.path.length) {
             this.navigator.shift();
         }
+    }
 
-        if (!this.navigator.length && this.scoutMark) {
-            this.money += gameStore.scoutMarks[this.scoutMark].reward;
-            delete gameStore.scoutMarks[this.scoutMark];
-            this.scoutMark = null;
-        }
+    removeScoutMark() {
+        this.scoutMark = null;
+        this.navigator.length = 0;
+    }
+
+    addMoney(amount) {
+        this.money += amount;
     }
 
     aiMove() {
@@ -216,7 +219,7 @@ export class Hero {
         this.currentHealth -= finalDamage < 1 ? 1 : Math.floor(finalDamage);
 
         if (this.currentHealth <= this.maxHealth / 10) {
-            this.navigator = [this.getNavigationTo(0, 0)];
+            this.buildTavernNavigator();
 
             if (this.scoutMark) {
                 gameStore.scoutMarks[this.scoutMark].heroId = null;
@@ -271,44 +274,40 @@ export class Hero {
         }
     }
 
-    private buildScoutNavigator() {
-        const [markX, markY] = this.scoutMark.split('x').map(coord => parseInt(coord, 10));
+    private searchForClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number] {
+
         let range = 1;
         const result = [];
 
         while (result.length === 0) {
-            for (let x = markX - range; x <= markX + range; x++) {
-                const upLine = mapCoords(x, markY - range);
-                if (gameStore.map[upLine]) {
-                    result.push([x, markY - range]);
+            for (let x = sourceX - range; x <= sourceX + range; x++) {
+                const upLine = mapCoords(x, sourceY - range);
+                if (check(upLine)) {
+                    result.push([x, sourceY - range]);
                 }
 
-                const bottomLine = mapCoords(x, markY + range);
-                if (gameStore.map[bottomLine]) {
-                    result.push([x, markY + range]);
+                const bottomLine = mapCoords(x, sourceY + range);
+                if (check(bottomLine)) {
+                    result.push([x, sourceY + range]);
                 }
             }
 
-            for (let y = markY - range; y <= markY + range; y++) {
-                const leftLine = mapCoords(markX - range, y);
-                if (gameStore.map[leftLine]) {
-                    result.push([markX - range, y]);
+            for (let y = sourceY - range; y <= sourceY + range; y++) {
+                const leftLine = mapCoords(sourceX - range, y);
+                if (check(leftLine)) {
+                    result.push([sourceX - range, y]);
                 }
 
-                const rightLine = mapCoords(markX + range, y);
-                if (gameStore.map[rightLine]) {
-                    result.push([markX + range, y]);
+                const rightLine = mapCoords(sourceX + range, y);
+                if (check(rightLine)) {
+                    result.push([sourceX + range, y]);
                 }
             }
 
             range++;
-
-            if (range === 11) {
-                console.error('can\'t find rout to the scout mark ' + this.scoutMark);
-            }
         }
 
-        const existingTile = result.reduce((result, [x, y, minRange]) => {
+        return result.reduce((result, [x, y, minRange]) => {
             const range = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
 
             if (!result || range < minRange) {
@@ -317,6 +316,22 @@ export class Hero {
                 return result;
             }
         }, null);
+    }
+
+    private buildTavernNavigator() {
+        const tileCoords = this.searchForClosest(this.x, this.y,
+                coords => !!(gameStore.map[coords] && gameStore.map[coords].buildingId) );
+
+        if (!tileCoords) {
+            return;
+        }
+
+        this.navigator.push(this.getNavigationTo(tileCoords[0], tileCoords[1]));
+    }
+
+    private buildScoutNavigator() {
+        const [markX, markY] = this.scoutMark.split('x').map(coord => parseInt(coord, 10));
+        const existingTile = this.searchForClosest(markX, markY, coords => !!gameStore.map[coords]);
 
         if (!existingTile) {
             return;
@@ -326,8 +341,8 @@ export class Hero {
         this.navigator.push(this.getNavigationTo(existingTile[0], existingTile[1]));
 
         // The way from closest known tile to the target
-        let minX = existingTile[0] < markX ? existingTile[0] : markX;
-        let minY = existingTile[1] < markY ? existingTile[1] : markY;
+        let minX;
+        let minY;
         let maxX: number;
         let maxY: number;
 
