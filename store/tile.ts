@@ -32,14 +32,13 @@ export class Tile {
     constructor(public x: number, public y: number) {
     }
 
-    generate(x, y) {
-        const mob = gameStore.newMob(Math.floor(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))));
-
-        mob.x = x;
-        mob.y = y;
-
-        this.mobs.push(mob.id);
+    generate() {
+        gameStore.newMob(this);
 
         this.sprite = grassFull[random(0, grassFull.length - 1)];
+    }
+
+    getDistance(): number {
+        return Math.floor(Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2)));
     }
 }

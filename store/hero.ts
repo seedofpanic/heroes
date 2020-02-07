@@ -78,6 +78,7 @@ export class Hero {
 
         if (this.quest && this.quest.navigator.length) {
             this.aiNavigation(this.quest.navigator);
+            return;
         }
         if (this.navigator.length) {
             this.aiNavigation(this.navigator);
@@ -265,10 +266,13 @@ export class Hero {
         const grid = new PF.Grid(gameStore.genPathArray(avoidMobs));
         const finder = new PF.AStarFinder();
         const {minX, minY} = gameStore;
+        const path = finder.findPath(this.x - minX, this.y - minY, x - minX, y - minY, grid);
+
+        path.shift();
 
         return {
             offsets: [minX, minY],
-            path: finder.findPath(this.x - minX, this.y - minY, x - minX, y - minY, grid)
+            path
         };
     }
 
@@ -388,7 +392,7 @@ export class Hero {
             return;
         }
 
-        this.navigator = [this.getNavigationTo(tileCoords[0], tileCoords[1], true)];
+        this.navigator = [this.getNavigationTo(tileCoords[0], tileCoords[1], false)];
     }
 
     private buildScoutMarkNavigator(coords: string): NavigationRoute[] {
@@ -405,7 +409,9 @@ export class Hero {
         }
 
         // The way from the hero to closest known tile
-        navigator.push(this.getNavigationTo(existingTile[0], existingTile[1], false));
+        if (existingTile[0] !== this.x || existingTile[1] !== this.y) {
+            navigator.push(this.getNavigationTo(existingTile[0], existingTile[1], false));
+        }
 
         // The way from closest known tile to the target
         let minX;
@@ -432,15 +438,18 @@ export class Hero {
         const grid = new PF.Grid((new Array(maxY - minY + 1))
             .fill((new Array(maxX - minX + 1)).fill(0)));
         const finder = new PF.AStarFinder();
+        const path = finder.findPath(
+            existingTile[0] - minX,
+            existingTile[1] - minY,
+            scoutX - minX,
+            scoutY - minY,
+            grid);
+
+        path.shift();
 
         navigator.push({
             offsets: [minX, minY],
-            path: finder.findPath(
-                existingTile[0] - minX,
-                existingTile[1] - minY,
-                scoutX - minX,
-                scoutY - minY,
-                grid)
+            path
         });
 
         return navigator;

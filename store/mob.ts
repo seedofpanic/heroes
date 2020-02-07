@@ -2,6 +2,7 @@ import {observable, toJS} from "mobx";
 import {gameStore, mapCoords} from "./game.store";
 import {random} from "./random";
 import {ITEMS_TYPES} from "./items";
+import { Tile } from './tile';
 
 let nextMobNumber = 1;
 
@@ -18,14 +19,12 @@ export class Mob {
     isDead: boolean;
     damageMin = 1;
     damageMax = 3;
-    x: number;
-    y: number;
     possibleLoot: LootItem[] = [
         {type: ITEMS_TYPES.LEATHER, chance: 0.5},
         {type: ITEMS_TYPES.LEATHER, chance: 0.5},
     ];
 
-    constructor() {
+    constructor(public x: number, public y: number) {
         nextMobNumber++;
     }
 

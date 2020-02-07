@@ -1,5 +1,6 @@
 import {observable} from "mobx"
 import {Hero} from "./hero";
+import { random } from './random';
 import {spritesMap, Tile} from "./tile";
 import {Building} from "./building";
 import {Mob} from "./mob";
@@ -32,7 +33,7 @@ class GameStore {
         const tile = new Tile(x, y);
 
         if (!skipGeneration) {
-            tile.generate(x, y);
+            tile.generate();
         }
 
         if (x > this.maxX) {
@@ -82,20 +83,27 @@ class GameStore {
         return this.map[mapCoords(x, y)];
     }
 
-    newMob(distance: number) {
-        const mob = new Mob();
+    newMob(tile: Tile) {
+        const mob = new Mob(tile.x, tile.y);
+        mob.generate(tile.getDistance());
 
-        mob.generate(distance);
+        tile.mobs.push(mob.id);
         this.mobs[mob.id] = mob;
-
-        return mob;
     }
 
     tick(count) {
+        this.produceMoney(count);
+        this.actHeroes();
+        this.spawnMob(count);
+    }
+
+    private produceMoney(count: number) {
         if (count % 20 === 0) {
             this.money += 1;
         }
+    }
 
+    private actHeroes() {
         Object.keys(gameStore.heroes).forEach(id => {
             const hero = gameStore.heroes[id];
 
@@ -105,6 +113,23 @@ class GameStore {
 
             hero.ai();
         });
+    }
+
+    private spawnMob(count: number) {
+        const coordsKeys = Object.keys(this.map);
+
+        if (count % 30 !== 29) {
+            return;
+        }
+
+        const coords = coordsKeys[random(0, coordsKeys.length - 1)];
+
+        if (coords === '0x0') {
+            return;
+        }
+
+        const tile = this.map[coords];
+        this.newMob(tile);
     }
 
     genPathArray(avoidMobs: boolean) {
