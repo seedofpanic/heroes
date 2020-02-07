@@ -6,9 +6,7 @@ import {HpLineComponent} from "../hp-line.component";
 import {Tile} from "../../store/tile";
 
 @observer
-export class TileComponent extends React.Component {
-    props: {coords: string};
-
+export class TileComponent extends React.Component<{coords: string}> {
     render() {
         const {coords} = this.props;
         const tile = gameStore.map[coords];
@@ -20,7 +18,8 @@ export class TileComponent extends React.Component {
         const mob = tile.mobs.length ? gameStore.mobs[tile.mobs[0]] : null;
         const hero = tile.heroes.length ? gameStore.heroes[tile.heroes[0]] : null;
 
-        return <div style={{backgroundPosition: `${tile.sprite[0]}px ${tile.sprite[1]}px`}} className={'tile exists' + (gameStore.viewTile === coords ? ' selected' : '')} onClick={() => this.viewTile()}>
+        return <div style={{backgroundPosition: `${tile.sprite[0]}px ${tile.sprite[1]}px`}} className={'tile exists' + (gameStore.viewTile === coords ? ' selected' : '') +
+        (gameStore.killMarks[coords] ? ' kill-mark' : '')} onClick={() => this.viewTile()}>
                 {tile.buildingId ? <div className="building"></div> : ''}
                 {tile.heroes.length ? <div className="hero">
                     <img src="https://res.cloudinary.com/dstnxq7wt/image/upload/v1580681051/heroes/mobs/knight.png"/>

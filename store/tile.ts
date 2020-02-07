@@ -29,11 +29,11 @@ export class Tile {
     sprite: [number, number];
     @observable buildingId: number;
 
-    constructor() {
+    constructor(public x: number, public y: number) {
     }
 
     generate(x, y) {
-        const mob = gameStore.newMob();
+        const mob = gameStore.newMob(Math.floor(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))));
 
         mob.x = x;
         mob.y = y;

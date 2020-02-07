@@ -3,7 +3,7 @@ import {observer} from "mobx-react";
 import {gameStore} from "../store/game.store";
 import {HeroDetailsComponent} from "./hero-details.component";
 import {BuildingInfoComponent} from "./building-info.component";
-import {BuildMenuComponent} from "./build-menu.component";
+import {TileMenuComponent} from "./tile-menu.component";
 import {HiddenTileDetailComponent} from "./hidden-tile-detail.component";
 
 @observer
@@ -31,9 +31,8 @@ export class RightPanelComponent extends React.Component {
                 : ''
             }
             <div className="part">
-                {
-                    building ? <BuildingInfoComponent building={building}/> : <BuildMenuComponent tile={tile}></BuildMenuComponent>
-                }
+
+                {building ? <BuildingInfoComponent building={building}/> : ''}
                 {tile.heroes.length ?
                 <div>
                     <div>Heroes</div>
@@ -56,6 +55,7 @@ export class RightPanelComponent extends React.Component {
                     </ul>
                 </div> : ''
                 }
+                <TileMenuComponent tile={tile}/>
             </div>
             <style jsx>{`
                 .right-panel {

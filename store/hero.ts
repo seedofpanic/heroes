@@ -8,6 +8,17 @@ import {LootItem} from "./mob";
 
 let nextHeroNumber = 1;
 
+interface Quest {
+    type: string;
+    coords: string;
+    navigator: NavigationRoute[];
+}
+
+interface NavigationRoute {
+    offsets: [number, number];
+    path: [number, number][];
+}
+
 export class Hero {
     @observable id = nextHeroNumber;
     @observable name = 'Sr. ' + nextHeroNumber;
@@ -18,13 +29,14 @@ export class Hero {
     damageMin = 1;
     damageMax = 3;
     @observable isDead;
-    navigator = [];
+    navigator: NavigationRoute[] = [];
     @observable inventory = {};
     @observable money = 0;
-    @observable equip: {[name: string]: ITEMS_TYPES} = {
+    @observable equip: { [name: string]: ITEMS_TYPES } = {
         [EQUIP_SLOTS.CHEST]: null
     };
-    scoutMark: string;
+    quest: Quest;
+    isFleeing: boolean;
 
     constructor(x, y) {
         this.x = x;
@@ -47,26 +59,30 @@ export class Hero {
 
             if (this.currentHealth < this.maxHealth) {
                 this.heal(10);
+                this.isFleeing = false;
 
                 return;
             }
         }
 
-        if (tile.mobs.length > 0) {
+        if (!this.isFleeing && tile.mobs.length > 0) {
             this.engage(tile);
             return;
         }
 
-        if (!this.navigator.length && !this.scoutMark) {
-            this.checkQuests();
+        if (!this.navigator.length && !this.quest) {
+            if (!this.checkQuests()) {
+                this.buildScoutClosestNavigator()
+            }
         }
 
+        if (this.quest && this.quest.navigator.length) {
+            this.aiNavigation(this.quest.navigator);
+        }
         if (this.navigator.length) {
-            this.aiNavigation();
+            this.aiNavigation(this.navigator);
             return;
         }
-
-        this.aiMove();
     }
 
     sellItems(building) {
@@ -115,8 +131,8 @@ export class Hero {
         });
     }
 
-    aiNavigation() {
-        const navigator = this.navigator[0];
+    aiNavigation(navigators) {
+        const navigator = navigators[0];
 
         if (navigator.path.length) {
             const step = navigator.path.shift();
@@ -125,13 +141,29 @@ export class Hero {
         }
 
         if (!navigator.path.length) {
-            this.navigator.shift();
+            navigators.shift();
         }
     }
 
-    removeScoutMark() {
-        this.scoutMark = null;
-        this.navigator.length = 0;
+    removeQuest() {
+        if (!this.quest) {
+            return;
+        }
+
+        switch (this.quest.type) {
+            case 'scout':
+                if (gameStore.scoutMarks[this.quest.coords]) {
+                    gameStore.scoutMarks[this.quest.coords].heroId = null;
+                }
+                break;
+            case 'kill':
+                if (gameStore.scoutMarks[this.quest.coords]) {
+                    gameStore.scoutMarks[this.quest.coords].heroId = null;
+                }
+                break;
+        }
+
+        this.quest = null;
     }
 
     addMoney(amount) {
@@ -162,11 +194,7 @@ export class Hero {
         gameStore.map[from].heroes = gameStore.map[from].heroes.filter(heroId => heroId !== this.id);
 
         if (!gameStore.map[to]) {
-            const tile = new Tile();
-
-            tile.generate(x, y);
-
-            gameStore.addTile(tile, x, y);
+            gameStore.addTile(x, y);
         }
 
         gameStore.map[to].heroes.push(this.id);
@@ -219,11 +247,12 @@ export class Hero {
         this.currentHealth -= finalDamage < 1 ? 1 : Math.floor(finalDamage);
 
         if (this.currentHealth <= this.maxHealth / 10) {
+            this.removeQuest();
+
             this.buildTavernNavigator();
 
-            if (this.scoutMark) {
-                gameStore.scoutMarks[this.scoutMark].heroId = null;
-                this.scoutMark = null;
+            if (this.navigator.length) {
+                this.isFleeing = true;
             }
         }
 
@@ -232,13 +261,14 @@ export class Hero {
         }
     }
 
-    getNavigationTo(x: number, y: number) {
-        const grid = new PF.Grid(gameStore.genPathArray());
+    getNavigationTo(x: number, y: number, avoidMobs: boolean): NavigationRoute {
+        const grid = new PF.Grid(gameStore.genPathArray(avoidMobs));
         const finder = new PF.AStarFinder();
+        const {minX, minY} = gameStore;
 
         return {
-            offsets: [gameStore.minX, gameStore.minY],
-            path: finder.findPath(this.x - gameStore.minX, this.y - gameStore.minY, x - gameStore.minX, y - gameStore.minY, grid)
+            offsets: [minX, minY],
+            path: finder.findPath(this.x - minX, this.y - minY, x - minX, y - minY, grid)
         };
     }
 
@@ -268,14 +298,33 @@ export class Hero {
         const scoutMarks = Object.keys(gameStore.scoutMarks);
 
         if (scoutMarks.length > 0) {
-            this.scoutMark = scoutMarks[0];
-            gameStore.scoutMarks[this.scoutMark].heroId = this.id;
-            this.buildScoutNavigator();
+            this.quest = {
+                navigator: this.buildScoutMarkNavigator(scoutMarks[0]),
+                type: 'scout',
+                coords: scoutMarks[0]
+            };
+            gameStore.scoutMarks[this.quest.coords].heroId = this.id;
+
+            return true;
         }
+
+        const killMarks = Object.keys(gameStore.killMarks);
+
+        if (killMarks.length > 0) {
+            this.quest = {
+                navigator: this.buildKillNavigator(killMarks[0]),
+                type: 'kill',
+                coords: killMarks[0]
+            };
+            gameStore.killMarks[this.quest.coords].heroId = this.id;
+
+            return true;
+        }
+
+        return false;
     }
 
-    private searchForClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number] {
-
+    private lookForAllClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number, number][] {
         let range = 1;
         const result = [];
 
@@ -307,7 +356,13 @@ export class Hero {
             range++;
         }
 
-        return result.reduce((result, [x, y, minRange]) => {
+        return result;
+    }
+
+    private lookForClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number, number] {
+        const closestTiles = this.lookForAllClosest(sourceX, sourceY, check);
+
+        return closestTiles.reduce((result, [x, y, minRange]) => {
             const range = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
 
             if (!result || range < minRange) {
@@ -318,27 +373,39 @@ export class Hero {
         }, null);
     }
 
+    private buildKillNavigator(coords: string): NavigationRoute[] {
+        const [markX, markY] = coords.split('x').map(coord => parseInt(coord, 10));
+
+        return [this.getNavigationTo(markX, markY, false)];
+    }
+
     private buildTavernNavigator() {
-        const tileCoords = this.searchForClosest(this.x, this.y,
-                coords => !!(gameStore.map[coords] && gameStore.map[coords].buildingId) );
+        const tileCoords = this.lookForClosest(this.x, this.y,
+            coords => !!(gameStore.map[coords] && gameStore.map[coords].buildingId));
 
         if (!tileCoords) {
+            debugger;
             return;
         }
 
-        this.navigator.push(this.getNavigationTo(tileCoords[0], tileCoords[1]));
+        this.navigator = [this.getNavigationTo(tileCoords[0], tileCoords[1], true)];
     }
 
-    private buildScoutNavigator() {
-        const [markX, markY] = this.scoutMark.split('x').map(coord => parseInt(coord, 10));
-        const existingTile = this.searchForClosest(markX, markY, coords => !!gameStore.map[coords]);
+    private buildScoutMarkNavigator(coords: string): NavigationRoute[] {
+        const [markX, markY] = coords.split('x').map(coord => parseInt(coord, 10));
+        return this.buildScoutNavigator(markX, markY);
+    }
+
+    private buildScoutNavigator(scoutX: number, scoutY: number): NavigationRoute[] {
+        const navigator = [];
+        const existingTile = this.lookForClosest(scoutX, scoutY, coords => !!gameStore.map[coords]);
 
         if (!existingTile) {
             return;
         }
 
         // The way from the hero to closest known tile
-        this.navigator.push(this.getNavigationTo(existingTile[0], existingTile[1]));
+        navigator.push(this.getNavigationTo(existingTile[0], existingTile[1], false));
 
         // The way from closest known tile to the target
         let minX;
@@ -346,19 +413,19 @@ export class Hero {
         let maxX: number;
         let maxY: number;
 
-        if (existingTile[0] < markX) {
+        if (existingTile[0] < scoutX) {
             minX = existingTile[0];
-            maxX = markX
+            maxX = scoutX
         } else {
-            minX = markX;
+            minX = scoutX;
             maxX = existingTile[0]
         }
 
-        if (existingTile[1] < markY) {
+        if (existingTile[1] < scoutY) {
             minY = existingTile[1];
-            maxY = markY
+            maxY = scoutY
         } else {
-            minY = markY;
+            minY = scoutY;
             maxY = existingTile[1]
         }
 
@@ -366,14 +433,22 @@ export class Hero {
             .fill((new Array(maxX - minX + 1)).fill(0)));
         const finder = new PF.AStarFinder();
 
-        this.navigator.push({
+        navigator.push({
             offsets: [minX, minY],
             path: finder.findPath(
                 existingTile[0] - minX,
                 existingTile[1] - minY,
-                markX - minX,
-                markY - minY,
+                scoutX - minX,
+                scoutY - minY,
                 grid)
         });
+
+        return navigator;
+    }
+
+    private buildScoutClosestNavigator() {
+        const tiles = this.lookForAllClosest(this.x, this.y, coords => !gameStore.map[coords]);
+        const [x, y] = tiles[random(0, tiles.length - 1)];
+        this.navigator = this.buildScoutNavigator(x, y);
     }
 }

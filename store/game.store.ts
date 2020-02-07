@@ -22,12 +22,19 @@ class GameStore {
     minX = 0;
     maxY = 0;
     minY = 0;
+    @observable killMarks: {[name: string]: {reward: number, heroId: number}} = {};
 
     showTile(coords: string) {
         this.viewTile = coords;
     }
 
-    addTile(tile, x, y) {
+    addTile(x, y, skipGeneration?: boolean) {
+        const tile = new Tile(x, y);
+
+        if (!skipGeneration) {
+            tile.generate(x, y);
+        }
+
         if (x > this.maxX) {
             this.maxX = x;
         }
@@ -49,6 +56,8 @@ class GameStore {
         this.map[coords] = tile;
 
         this.evaluateScoutMark(coords);
+
+        return tile;
     }
 
     evaluateScoutMark(coords: string) {
@@ -56,7 +65,7 @@ class GameStore {
             if (this.scoutMarks[coords].heroId) {
                 const hero = this.heroes[this.scoutMarks[coords].heroId];
 
-                hero.removeScoutMark();
+                hero.removeQuest();
                 hero.addMoney(this.scoutMarks[coords].reward);
             }
 
@@ -73,10 +82,10 @@ class GameStore {
         return this.map[mapCoords(x, y)];
     }
 
-    newMob() {
+    newMob(distance: number) {
         const mob = new Mob();
 
-        mob.generate();
+        mob.generate(distance);
         this.mobs[mob.id] = mob;
 
         return mob;
@@ -98,7 +107,7 @@ class GameStore {
         });
     }
 
-    genPathArray() {
+    genPathArray(avoidMobs: boolean) {
         const pathArray = [];
 
         for (let y = this.minY; y <= this.maxY; y++) {
@@ -108,7 +117,7 @@ class GameStore {
 
             for (let x = this.minX; x <= this.maxX; x++) {
                 const tile = this.getTile(x, y);
-                line.push(!tile || tile.mobs.length ? 1 : 0);
+                line.push(!tile || (avoidMobs && (tile.mobs.length ? 1 : 0)));
             }
         }
 
@@ -130,6 +139,24 @@ class GameStore {
         this.scoutMarks[coords] = {reward: 5, heroId: null};
         this.money -= 5;
     }
+
+    setKillReward(x: number, y: number) {
+        this.killMarks[mapCoords(x, y)] = {reward: 10, heroId: null};
+        this.money -= 10;
+    }
+
+    tileCleared(tile: Tile) {
+        const coords = mapCoords(tile.x, tile.y);
+        const killMark = this.killMarks[coords];
+
+        if (killMark) {
+            if (killMark.heroId) {
+                this.heroes[killMark.heroId].removeQuest();
+                this.heroes[killMark.heroId].addMoney(killMark.reward);
+            }
+            delete this.killMarks[coords];
+        }
+    }
 }
 
 export const gameStore = new GameStore();
@@ -138,10 +165,9 @@ export function mapCoords(x, y) {
     return `${x}x${y}`;
 }
 
-const tile = new Tile();
+const tile = gameStore.addTile(0, 0, true);
 tile.sprite = spritesMap.grass;
 gameStore.build(tile);
-gameStore.addTile(tile, 0, 0);
 const hero = new Hero(0, 0);
 hero.generate();
 gameStore.addHero(hero, 0, 0);

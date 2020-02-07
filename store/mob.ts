@@ -29,8 +29,10 @@ export class Mob {
         nextMobNumber++;
     }
 
-    generate() {
-        this.maxHealth = random(5, 20);
+    generate(power: number) {
+        this.damageMin = 1 * power;
+        this.damageMax = 3 * power;
+        this.maxHealth = random(5, 20) * power;
         this.currentHealth = this.maxHealth;
     }
 
@@ -56,5 +58,6 @@ export class Mob {
         const tile = gameStore.map[mapCoords(this.x, this.y)];
         tile.mobs = tile.mobs.filter(mobId => mobId !== this.id);
         delete gameStore.mobs[this.id];
+        gameStore.tileCleared(tile);
     }
 }
