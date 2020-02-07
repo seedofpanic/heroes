@@ -3,7 +3,7 @@ import PF from "pathfinding";
 import {gameStore, mapCoords} from "./game.store";
 import {Tile} from "./tile";
 import {random} from "./random";
-import {EQUIP_SLOTS, Item, items, ITEMS_TYPES} from "./items";
+import {EQUIP_SLOTS, items, ITEMS_TYPES} from "./items";
 import {LootItem} from "./mob";
 
 let nextHeroNumber = 1;
@@ -117,13 +117,11 @@ export class Hero {
 
     buyItems(building) {
         Object.keys(building.inventory).forEach((itemType: ITEMS_TYPES) => {
-            const count = building.inventory[itemType];
             const price = building.forSell[itemType];
 
             if (price) {
                 if (!this.inventory[itemType] && price <= this.money) {
                     this.addItem(itemType, 1);
-                    this.equipItem(itemType);
                     building.removeItem(itemType, 1);
                     this.money -= price;
                     gameStore.money += price;
@@ -205,7 +203,10 @@ export class Hero {
     }
 
     getDamage() {
-        return random(this.damageMin, this.damageMax);
+        const weaponDamage = this.equip[EQUIP_SLOTS.RIGHT_HAND] ? items[this.equip[EQUIP_SLOTS.RIGHT_HAND]]
+            .stats.damage : [0, 0];
+
+        return random(this.damageMin + weaponDamage[0], this.damageMax + weaponDamage[1]);
     }
 
     engage(tile: Tile) {
@@ -233,14 +234,15 @@ export class Hero {
 
     addItem(type, count) {
         this.inventory[type] = this.inventory[type] ? this.inventory[type] + count : count;
+        this.equipItem(type);
     }
 
-    equipItem(item: ITEMS_TYPES) {
-        if (!items[item].equippable) {
+    equipItem(type: ITEMS_TYPES) {
+        if (!this.inventory[type] || !items[type].equippable) {
             return;
         }
 
-        this.equip[items[item].equippable] = item;
+        this.equip[items[type].equippable] = type;
     }
 
     hit(damage: number) {
@@ -328,7 +330,7 @@ export class Hero {
         return false;
     }
 
-    private lookForAllClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number, number][] {
+    static lookForAllClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number, number][] {
         let range = 1;
         const result = [];
 
@@ -364,7 +366,7 @@ export class Hero {
     }
 
     private lookForClosest(sourceX: number, sourceY: number, check: (coords: string) => boolean): [number, number, number] {
-        const closestTiles = this.lookForAllClosest(sourceX, sourceY, check);
+        const closestTiles = Hero.lookForAllClosest(sourceX, sourceY, check);
 
         return closestTiles.reduce((result, [x, y, minRange]) => {
             const range = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
@@ -456,7 +458,7 @@ export class Hero {
     }
 
     private buildScoutClosestNavigator() {
-        const tiles = this.lookForAllClosest(this.x, this.y, coords => !gameStore.map[coords]);
+        const tiles = Hero.lookForAllClosest(this.x, this.y, coords => !gameStore.map[coords]);
         const [x, y] = tiles[random(0, tiles.length - 1)];
         this.navigator = this.buildScoutNavigator(x, y);
     }

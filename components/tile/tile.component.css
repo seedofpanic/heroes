@@ -38,9 +38,13 @@
     position: absolute;
     right: 0;
     bottom: 0;
-    width: 16px;
-    height: 16px;
-    background: url("https://res.cloudinary.com/dstnxq7wt/image/upload/v1580687692/heroes/Tile-set_-_Toen_s_Medieval_Strategy_16x16_-_v.1.0.png") -16px -16px;
+    width: 32px;
+    height: 33px;
+    background: url("https://res.cloudinary.com/dstnxq7wt/image/upload/v1580687692/heroes/Tile-set_-_Toen_s_Medieval_Strategy_16x16_-_v.1.0.png") -32px -111px;
+}
+
+.tile.center .building {
+    background-position: -64px -111px;
 }
 
 .box {
@@ -51,6 +55,13 @@
     flex: 0;
     width: 16px;
 }
+
+.hero-image {
+    width: 16px;
+    height: 28px;
+    background: url("https://res.cloudinary.com/dstnxq7wt/image/upload/v1580681051/heroes/mobs/knight.png");
+}
+
 .monster {
     padding-top: 3px;
     flex: 0 0 16px;

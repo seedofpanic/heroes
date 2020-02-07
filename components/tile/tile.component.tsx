@@ -17,15 +17,16 @@ export class TileComponent extends React.Component<{coords: string}> {
         const mob = tile.mobs.length ? gameStore.mobs[tile.mobs[0]] : null;
         const hero = tile.heroes.length ? gameStore.heroes[tile.heroes[0]] : null;
 
-        return <div style={{backgroundPosition: `${tile.sprite[0]}px ${tile.sprite[1]}px`}} className={'tile exists' + (gameStore.viewTile === coords ? ' selected' : '') +
+        return <div style={{backgroundPosition: `${tile.sprite[0]}px ${tile.sprite[1]}px`}}
+                    className={'tile exists' + ((tile.x === 0 && tile.y === 0) ? ' center' : '') + (gameStore.viewTile === coords ? ' selected' : '') +
         (gameStore.killMarks[coords] ? ' kill-mark' : '')} onClick={() => this.viewTile()}>
-                {tile.buildingId ? <div className="building"></div> : ''}
+                {tile.buildingId ? <div className="building"/> : ''}
                 {hero ? <div className="hero">
-                    <img src="https://res.cloudinary.com/dstnxq7wt/image/upload/v1580681051/heroes/mobs/knight.png"/>
+                    <div className="hero-image"/>
                     <HpLineComponent current={hero.currentHealth} max={hero.maxHealth}/>
                 </div> : ''}
                 {mob ? <div className="hero">
-                    <div className="monster"></div>
+                    <div className="monster"/>
                     <HpLineComponent current={mob.currentHealth} max={mob.maxHealth}/>
                 </div> : ''}
             <style jsx>{style}</style>

@@ -15,6 +15,7 @@ export class HeroDetailsComponent extends React.Component {
             <div>HP: {hero.currentHealth}/{hero.maxHealth}</div>
             <div>
                 {this.renderEquippedItem(hero, 'Chest', EQUIP_SLOTS.CHEST)}
+                {this.renderEquippedItem(hero, 'Right hand', EQUIP_SLOTS.RIGHT_HAND)}
             </div>
             <div>
                 <div>Money: {hero.money}</div>

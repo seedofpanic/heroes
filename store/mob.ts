@@ -1,8 +1,7 @@
-import {observable, toJS} from "mobx";
+import {observable} from "mobx";
 import {gameStore, mapCoords} from "./game.store";
 import {random} from "./random";
 import {ITEMS_TYPES} from "./items";
-import { Tile } from './tile';
 
 let nextMobNumber = 1;
 
@@ -22,6 +21,7 @@ export class Mob {
     possibleLoot: LootItem[] = [
         {type: ITEMS_TYPES.LEATHER, chance: 0.5},
         {type: ITEMS_TYPES.LEATHER, chance: 0.5},
+        {type: ITEMS_TYPES.OLD_SWARD, chance: 0.01},
     ];
 
     constructor(public x: number, public y: number) {
@@ -29,7 +29,7 @@ export class Mob {
     }
 
     generate(power: number) {
-        this.damageMin = 1 * power;
+        this.damageMin = power;
         this.damageMax = 3 * power;
         this.maxHealth = random(5, 20) * power;
         this.currentHealth = this.maxHealth;
