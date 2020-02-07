@@ -52,8 +52,8 @@ export class Hero {
     ai() {
         const tile = gameStore.map[mapCoords(this.x, this.y)];
 
-        if (this.x === 0 && this.y === 0) {
-            const building = gameStore.getBuildingFromCoords(this.x, this.y);
+        if (tile.buildingId) {
+            const building = gameStore.buildings[tile.buildingId];
             this.sellItems(building);
             this.buyItems(building);
 
